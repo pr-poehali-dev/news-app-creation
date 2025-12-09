@@ -407,9 +407,9 @@ function Index() {
               <CardHeader>
                 <CardTitle className="text-base">Настройки уведомлений</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <div className="font-medium text-sm">Push-уведомления</div>
                     <div className="text-xs text-muted-foreground">Важные новости в реальном времени</div>
                   </div>
@@ -421,16 +421,14 @@ function Index() {
                     {notificationsEnabled ? 'Вкл' : 'Выкл'}
                   </Button>
                 </div>
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={sendTestNotification}
-                  >
-                    <Icon name="Send" size={16} />
-                    Отправить тестовое уведомление
-                  </Button>
-                </div>
+                <Button
+                  variant="secondary"
+                  className="w-full gap-2"
+                  onClick={sendTestNotification}
+                >
+                  <Icon name="Send" size={16} />
+                  Отправить тестовое уведомление
+                </Button>
               </CardContent>
             </Card>
 
