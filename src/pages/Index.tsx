@@ -147,6 +147,39 @@ function Index() {
     }
   };
 
+  const sendTestNotification = async () => {
+    if (!notificationsEnabled) {
+      toast({
+        title: 'Включите уведомления',
+        description: 'Сначала разрешите push-уведомления',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if ('serviceWorker' in navigator && 'Notification' in window) {
+      const registration = await navigator.serviceWorker.ready;
+      
+      const randomNews = mockNews[Math.floor(Math.random() * mockNews.length)];
+      
+      registration.showNotification('🔔 Новая важная новость!', {
+        body: randomNews.title,
+        icon: '/favicon.svg',
+        badge: '/favicon.svg',
+        tag: 'test-notification',
+        requireInteraction: false,
+        data: {
+          url: '/'
+        }
+      });
+
+      toast({
+        title: 'Уведомление отправлено',
+        description: 'Проверьте уведомления на телефоне',
+      });
+    }
+  };
+
   useEffect(() => {
     onMessageListener()
       .then((payload: any) => {
@@ -365,6 +398,18 @@ function Index() {
                     {notificationsEnabled ? 'Вкл' : 'Выкл'}
                   </Button>
                 </div>
+                {notificationsEnabled && (
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={sendTestNotification}
+                    >
+                      <Icon name="Send" size={16} />
+                      Отправить тестовое уведомление
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
