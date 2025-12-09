@@ -148,35 +148,53 @@ function Index() {
   };
 
   const sendTestNotification = async () => {
-    if (!notificationsEnabled) {
+    if (!('Notification' in window)) {
       toast({
-        title: 'Включите уведомления',
-        description: 'Сначала разрешите push-уведомления',
+        title: 'Не поддерживается',
+        description: 'Ваш браузер не поддерживает уведомления',
         variant: 'destructive',
       });
       return;
     }
 
-    if ('serviceWorker' in navigator && 'Notification' in window) {
-      const registration = await navigator.serviceWorker.ready;
-      
-      const randomNews = mockNews[Math.floor(Math.random() * mockNews.length)];
-      
-      registration.showNotification('🔔 Новая важная новость!', {
-        body: randomNews.title,
-        icon: '/favicon.svg',
-        badge: '/favicon.svg',
-        tag: 'test-notification',
-        requireInteraction: false,
-        data: {
-          url: '/'
-        }
-      });
-
+    if (Notification.permission !== 'granted') {
       toast({
-        title: 'Уведомление отправлено',
-        description: 'Проверьте уведомления на телефоне',
+        title: 'Включите уведомления',
+        description: 'Нажмите кнопку "Выкл" чтобы разрешить уведомления',
+        variant: 'destructive',
       });
+      return;
+    }
+
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        
+        const randomNews = mockNews[Math.floor(Math.random() * mockNews.length)];
+        
+        await registration.showNotification('🔔 Новая важная новость!', {
+          body: randomNews.title,
+          icon: '/favicon.svg',
+          badge: '/favicon.svg',
+          tag: 'test-notification',
+          requireInteraction: false,
+          data: {
+            url: '/'
+          }
+        });
+
+        toast({
+          title: 'Уведомление отправлено',
+          description: 'Проверьте уведомления на телефоне',
+        });
+      } catch (error) {
+        console.error('Error sending notification:', error);
+        toast({
+          title: 'Ошибка',
+          description: 'Не удалось отправить уведомление',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -403,18 +421,16 @@ function Index() {
                     {notificationsEnabled ? 'Вкл' : 'Выкл'}
                   </Button>
                 </div>
-                {notificationsEnabled && (
-                  <div className="pt-2">
-                    <Button
-                      variant="outline"
-                      className="w-full gap-2"
-                      onClick={sendTestNotification}
-                    >
-                      <Icon name="Send" size={16} />
-                      Отправить тестовое уведомление
-                    </Button>
-                  </div>
-                )}
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={sendTestNotification}
+                  >
+                    <Icon name="Send" size={16} />
+                    Отправить тестовое уведомление
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
