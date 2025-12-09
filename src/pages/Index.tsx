@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/hooks/use-toast';
+import { requestNotificationPermission, onMessageListener } from '@/lib/firebase';
 
 type NewsCategory = 'all' | 'politics' | 'economy' | 'tech' | 'sport' | 'culture';
 
@@ -125,38 +126,42 @@ function Index() {
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory>('all');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  useEffect(() => {
-    if ('Notification' in window && notificationsEnabled) {
-      const importantNews = mockNews.filter(n => n.isImportant);
-      if (importantNews.length > 0 && Notification.permission === 'granted') {
-        setTimeout(() => {
-          new Notification('Важная новость!', {
-            body: importantNews[0].title,
-            icon: '/favicon.svg',
-          });
-        }, 3000);
-      }
-    }
-  }, [notificationsEnabled]);
 
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        setNotificationsEnabled(true);
-        toast({
-          title: 'Уведомления включены',
-          description: 'Вы будете получать важные новости',
-        });
-      } else {
-        toast({
-          title: 'Уведомления отключены',
-          description: 'Разрешите уведомления в настройках браузера',
-          variant: 'destructive',
-        });
-      }
+
+  const handleNotificationPermission = async () => {
+    const token = await requestNotificationPermission();
+    if (token) {
+      setNotificationsEnabled(true);
+      localStorage.setItem('fcm_token', token);
+      toast({
+        title: 'Уведомления включены',
+        description: 'Вы будете получать важные новости даже когда сайт закрыт',
+      });
+      console.log('FCM Token saved:', token);
+    } else {
+      toast({
+        title: 'Уведомления отключены',
+        description: 'Разрешите уведомления в настройках браузера',
+        variant: 'destructive',
+      });
     }
   };
+
+  useEffect(() => {
+    onMessageListener()
+      .then((payload: any) => {
+        toast({
+          title: payload?.notification?.title || 'Новое уведомление',
+          description: payload?.notification?.body || '',
+        });
+      })
+      .catch((err) => console.log('Failed to receive message: ', err));
+
+    const savedToken = localStorage.getItem('fcm_token');
+    if (savedToken) {
+      setNotificationsEnabled(true);
+    }
+  }, []);
 
   const filteredNews = selectedCategory === 'all' 
     ? mockNews 
@@ -170,7 +175,7 @@ function Index() {
           <Button
             variant={notificationsEnabled ? "default" : "outline"}
             size="sm"
-            onClick={requestNotificationPermission}
+            onClick={handleNotificationPermission}
             className="gap-2"
           >
             <Icon name={notificationsEnabled ? "BellRing" : "Bell"} size={16} />
@@ -355,7 +360,7 @@ function Index() {
                   <Button
                     variant={notificationsEnabled ? "default" : "outline"}
                     size="sm"
-                    onClick={requestNotificationPermission}
+                    onClick={handleNotificationPermission}
                   >
                     {notificationsEnabled ? 'Вкл' : 'Выкл'}
                   </Button>
