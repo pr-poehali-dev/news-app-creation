@@ -190,10 +190,15 @@ function Index() {
       })
       .catch((err) => console.log('Failed to receive message: ', err));
 
-    const savedToken = localStorage.getItem('fcm_token');
-    if (savedToken) {
-      setNotificationsEnabled(true);
-    }
+    const checkNotificationPermission = () => {
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          setNotificationsEnabled(true);
+        }
+      }
+    };
+
+    checkNotificationPermission();
   }, []);
 
   const filteredNews = selectedCategory === 'all' 
