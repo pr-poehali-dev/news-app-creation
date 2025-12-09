@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/hooks/use-toast';
-import { requestNotificationPermission, onMessageListener } from '@/lib/firebase';
 
 type NewsCategory = 'all' | 'politics' | 'economy' | 'tech' | 'sport' | 'culture';
 
@@ -129,15 +128,24 @@ function Index() {
 
 
   const handleNotificationPermission = async () => {
-    const token = await requestNotificationPermission();
-    if (token) {
+    if (!('Notification' in window)) {
+      toast({
+        title: 'Не поддерживается',
+        description: 'Ваш браузер не поддерживает уведомления',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    
+    if (permission === 'granted') {
       setNotificationsEnabled(true);
-      localStorage.setItem('fcm_token', token);
+      localStorage.setItem('notifications_enabled', 'true');
       toast({
         title: 'Уведомления включены',
-        description: 'Вы будете получать важные новости даже когда сайт закрыт',
+        description: 'Вы будете получать важные новости',
       });
-      console.log('FCM Token saved:', token);
     } else {
       toast({
         title: 'Уведомления отключены',
@@ -147,7 +155,7 @@ function Index() {
     }
   };
 
-  const sendTestNotification = async () => {
+  const sendTestNotification = () => {
     if (!('Notification' in window)) {
       toast({
         title: 'Не поддерживается',
@@ -160,63 +168,30 @@ function Index() {
     if (Notification.permission !== 'granted') {
       toast({
         title: 'Включите уведомления',
-        description: 'Нажмите кнопку "Выкл" чтобы разрешить уведомления',
+        description: 'Нажмите зелёную кнопку "Вкл" чтобы разрешить',
         variant: 'destructive',
       });
       return;
     }
 
-    if ('serviceWorker' in navigator) {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        
-        const randomNews = mockNews[Math.floor(Math.random() * mockNews.length)];
-        
-        await registration.showNotification('🔔 Новая важная новость!', {
-          body: randomNews.title,
-          icon: '/favicon.svg',
-          badge: '/favicon.svg',
-          tag: 'test-notification',
-          requireInteraction: false,
-          data: {
-            url: '/'
-          }
-        });
+    const randomNews = mockNews[Math.floor(Math.random() * mockNews.length)];
+    
+    new Notification('🔔 Новая важная новость!', {
+      body: randomNews.title,
+      icon: '/favicon.svg',
+      tag: 'test-notification',
+    });
 
-        toast({
-          title: 'Уведомление отправлено',
-          description: 'Проверьте уведомления на телефоне',
-        });
-      } catch (error) {
-        console.error('Error sending notification:', error);
-        toast({
-          title: 'Ошибка',
-          description: 'Не удалось отправить уведомление',
-          variant: 'destructive',
-        });
-      }
-    }
+    toast({
+      title: 'Уведомление отправлено',
+      description: 'Проверьте верхнюю панель телефона',
+    });
   };
 
   useEffect(() => {
-    onMessageListener()
-      .then((payload: any) => {
-        toast({
-          title: payload?.notification?.title || 'Новое уведомление',
-          description: payload?.notification?.body || '',
-        });
-      })
-      .catch((err) => console.log('Failed to receive message: ', err));
-
-    const checkNotificationPermission = () => {
-      if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-          setNotificationsEnabled(true);
-        }
-      }
-    };
-
-    checkNotificationPermission();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      setNotificationsEnabled(true);
+    }
   }, []);
 
   const filteredNews = selectedCategory === 'all' 
